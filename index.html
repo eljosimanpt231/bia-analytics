@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIA · Performance Analytics — AI Solutions</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0C0C1A;
+      --surface: #13132B;
+      --surface2: #1A1A3A;
+      --purple: #7066A8;
+      --purple-light: #A394E0;
+      --purple-glow: rgba(112, 102, 168, 0.25);
+      --green: #00D68F;
+      --red: #FF4D6D;
+      --orange: #FF9F45;
+      --blue: #4DC8FF;
+      --text: #E8E8F0;
+      --muted: #7A7A9A;
+      --border: rgba(112, 102, 168, 0.2);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* --- Background gradient mesh --- */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(ellipse at center, rgba(112,102,168,0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -15%;
+      width: 50%;
+      height: 50%;
+      background: radial-gradient(ellipse at center, rgba(77,200,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* --- Header --- */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-badge {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--purple) 0%, #4B44A0 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 24px rgba(112,102,168,0.4);
+    }
+
+    .header-titles h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, var(--purple-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-titles p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .header-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 8px 18px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot-live {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse-live 2s infinite;
+    }
+
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* --- KPI Grid --- */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(112,102,168,0.2);
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .kpi-card.purple::before { background: linear-gradient(90deg, var(--purple), var(--purple-light)); }
+    .kpi-card.green::before  { background: linear-gradient(90deg, var(--green), #00A86B); }
+    .kpi-card.red::before    { background: linear-gradient(90deg, var(--red), #C7193B); }
+    .kpi-card.blue::before   { background: linear-gradient(90deg, var(--blue), #2B9FD8); }
+    .kpi-card.orange::before { background: linear-gradient(90deg, var(--orange), #E07535); }
+
+    .kpi-icon {
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+    }
+
+    .kpi-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .kpi-card.purple .kpi-value { color: var(--purple-light); }
+    .kpi-card.green .kpi-value  { color: var(--green); }
+    .kpi-card.red .kpi-value    { color: var(--red); }
+    .kpi-card.blue .kpi-value   { color: var(--blue); }
+    .kpi-card.orange .kpi-value { color: var(--orange); }
+
+    .kpi-sub {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* --- Charts Grid --- */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card:hover {
+      box-shadow: 0 4px 24px rgba(112,102,168,0.15);
+    }
+
+    .chart-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .chart-heading {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    .chart-container {
+      position: relative;
+    }
+
+    /* --- Donut center text --- */
+    .donut-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .donut-center {
+      position: absolute;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .donut-center-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1;
+    }
+
+    .donut-center-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* --- Reply Rate Ring --- */
+    .ring-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* --- Legend --- */
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+      width: 100%;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-text { color: var(--text); flex: 1; }
+    .legend-pct  { color: var(--muted); font-size: 0.75rem; }
+
+    /* --- Insight bar --- */
+    .insight-bar {
+      background: linear-gradient(135deg, rgba(112,102,168,0.15) 0%, rgba(77,200,255,0.08) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    .insight-bar .icon { font-size: 1.2rem; }
+
+    .insight-bar strong { color: var(--purple-light); }
+
+    /* --- Footer --- */
+    footer {
+      text-align: center;
+      padding: 32px 0 16px;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    footer span { color: var(--purple-light); }
+
+    /* --- Responsive --- */
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .charts-row  { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .header-titles h1 { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="logo-badge">🤖</div>
+      <div class="header-titles">
+        <h1>BIA · Performance Analytics</h1>
+        <p>AI Solutions · Agente de Qualificação de Leads via WhatsApp</p>
+      </div>
+    </div>
+    <div class="header-badge">
+      <div class="dot-live"></div>
+      Dados em tempo real · Nov 2025 – Abr 2026
+    </div>
+  </header>
+
+  <!-- INSIGHT -->
+  <div class="insight-bar">
+    <span class="icon">💡</span>
+    <span>
+      A BIA entrou em contacto com <strong>576 leads</strong> gerados por anúncios.
+      Em Março de 2026 registou-se o maior pico de atividade com <strong>299 conversas</strong> iniciadas,
+      e uma taxa de resposta de <strong>55%</strong>.
+    </span>
+  </div>
+
+  <!-- KPI GRID -->
+  <div class="kpi-grid">
+    <div class="kpi-card purple">
+      <div class="kpi-icon">📩</div>
+      <div class="kpi-label">Total de Leads Contactados</div>
+      <div class="kpi-value">576</div>
+      <div class="kpi-sub">Nov 2025 → Abr 2026</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">💬</div>
+      <div class="kpi-label">Taxa de Resposta</div>
+      <div class="kpi-value">54,7%</div>
+      <div class="kpi-sub">315 leads responderam</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-icon">🔇</div>
+      <div class="kpi-label">Sem Resposta</div>
+      <div class="kpi-value">45,3%</div>
+      <div class="kpi-sub">261 leads não responderam</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-label">Mediana de Resposta do Lead</div>
+      <div class="kpi-value">2m 9s</div>
+      <div class="kpi-sub">Tempo até 1.ª resposta</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-icon">⏱️</div>
+      <div class="kpi-label">Duração Mediana de Conversa</div>
+      <div class="kpi-value">26m</div>
+      <div class="kpi-sub">Conversas com resposta</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-label">Média de Mensagens (com resposta)</div>
+      <div class="kpi-value">~13</div>
+      <div class="kpi-sub">Trocas por conversa</div>
+    </div>
+  </div>
+
+  <!-- MAIN CHARTS: Monthly + Reply Donut -->
+  <div class="charts-grid">
+
+    <!-- Monthly Trend -->
+    <div class="chart-card">
+      <div class="chart-title">Tendência Mensal</div>
+      <div class="chart-heading">Conversas Iniciadas por Mês</div>
+      <div class="chart-container">
+        <canvas id="monthlyChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Reply Rate Donut -->
+    <div class="chart-card ring-card">
+      <div class="chart-title">Engagement</div>
+      <div class="chart-heading">Taxa de Resposta Global</div>
+      <div class="donut-wrapper">
+        <canvas id="replyDonut" width="220" height="220"></canvas>
+        <div class="donut-center">
+          <div class="donut-center-value">54,7%</div>
+          <div class="donut-center-label">responderam</div>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #00D68F;"></div>
+          <span class="legend-text">Responderam</span>
+          <span class="legend-pct">315 leads</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #FF4D6D;"></div>
+          <span class="legend-text">Sem resposta</span>
+          <span class="legend-pct">261 leads</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 2: Conversation Length + Hours + DOW -->
+  <div class="charts-row">
+
+    <!-- Conversation Length Distribution -->
+    <div class="chart-card">
+      <div class="chart-title">Profundidade</div>
+      <div class="chart-heading">Extensão das Conversas</div>
+      <div class="chart-container">
+        <canvas id="lengthChart" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- Activity by Hour -->
+    <div class="chart-card">
+      <div class="chart-title">Horário</div>
+      <div class="chart-heading">Leads por Hora do Dia</div>
+      <div class="chart-container">
+        <canvas id="hourChart" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- Activity by Day of Week -->
+    <div class="chart-card">
+      <div class="chart-title">Dia da Semana</div>
+      <div class="chart-heading">Leads por Dia</div>
+      <div class="chart-container">
+        <canvas id="dowChart" height="220"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 3: Reply rate by month -->
+  <div class="chart-card" style="margin-bottom: 16px;">
+    <div class="chart-title">Conversão Mensal</div>
+    <div class="chart-heading">Taxa de Resposta por Mês (%)</div>
+    <div class="chart-container">
+      <canvas id="replyRateChart" height="100"></canvas>
+    </div>
+  </div>
+
+  <footer>
+    Dashboard gerado em <span>01 Abril 2026</span> · AI Solutions · BIA Agente de Qualificação
+    <br>Dados: <span>aisolutions.chatbot_bia</span> · 4 374 mensagens registadas
+  </footer>
+
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────
+const MONTHS      = ['Nov 25', 'Dez 25', 'Jan 26', 'Fev 26', 'Mar 26', 'Abr 26'];
+const TOTAL_CONV  = [22, 109, 111, 30, 299, 5];
+const WITH_REPLY  = [15,  51,  59, 22, 165, 3];
+const NO_REPLY    = TOTAL_CONV.map((t, i) => t - WITH_REPLY[i]);
+const REPLY_RATE  = TOTAL_CONV.map((t, i) => +(WITH_REPLY[i] / t * 100).toFixed(1));
+
+const HOURS       = Array.from({length: 24}, (_, i) => i);
+const HOUR_DATA   = [44,24,6,6,9,6,6,13,22,27,10,24,17,28,39,19,32,19,23,42,30,42,48,40];
+
+const DOW_LABELS  = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const DOW_DATA    = [84, 75, 102, 85, 83, 66, 81];
+
+// Length buckets: 1 msg (no reply), 2-4, 5-10, 11-20, 20+
+const LEN_LABELS  = ['Sem resposta\n(1 msg)', '2–4 msgs', '5–10 msgs', '11–20 msgs', '20+ msgs'];
+const LEN_DATA    = [256, 94, 75, 84, 67];
+
+// ─── THEME ──────────────────────────────────────────────────────────
+Chart.defaults.color = '#7A7A9A';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+
+const grid = { color: 'rgba(112,102,168,0.12)', drawTicks: false };
+const tickPad = { padding: 8 };
+
+// ─── 1. MONTHLY BAR (stacked) ────────────────────────────────────────
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {
+        label: 'Responderam',
+        data: WITH_REPLY,
+        backgroundColor: 'rgba(0,214,143,0.85)',
+        borderRadius: 6,
+        borderSkipped: false,
+      },
+      {
+        label: 'Sem resposta',
+        data: NO_REPLY,
+        backgroundColor: 'rgba(255,77,109,0.55)',
+        borderRadius: 6,
+        borderSkipped: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 10, padding: 14 } },
+      tooltip: {
+        callbacks: {
+          afterBody: (items) => {
+            const i = items[0].dataIndex;
+            return [`Taxa: ${REPLY_RATE[i]}%`];
+          }
+        }
+      }
+    },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: tickPad },
+      y: { stacked: true, grid, ticks: tickPad, beginAtZero: true }
+    }
+  }
+});
+
+// ─── 2. REPLY DONUT ─────────────────────────────────────────────────
+new Chart(document.getElementById('replyDonut'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Responderam', 'Sem resposta'],
+    datasets: [{
+      data: [315, 261],
+      backgroundColor: ['rgba(0,214,143,0.9)', 'rgba(255,77,109,0.7)'],
+      borderColor: ['#00D68F', '#FF4D6D'],
+      borderWidth: 2,
+      hoverOffset: 8
+    }]
+  },
+  options: {
+    cutout: '72%',
+    plugins: { legend: { display: false }, tooltip: { enabled: true } }
+  }
+});
+
+// ─── 3. CONVERSATION LENGTH BAR ─────────────────────────────────────
+const lenGradient = (() => {
+  const ctx = document.getElementById('lengthChart').getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, 200);
+  g.addColorStop(0, 'rgba(112,102,168,0.9)');
+  g.addColorStop(1, 'rgba(163,148,224,0.6)');
+  return g;
+})();
+
+new Chart(document.getElementById('lengthChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Sem resposta', '2–4 msgs', '5–10 msgs', '11–20 msgs', '20+ msgs'],
+    datasets: [{
+      label: 'Sessões',
+      data: LEN_DATA,
+      backgroundColor: [
+        'rgba(255,77,109,0.6)',
+        'rgba(112,102,168,0.7)',
+        'rgba(112,102,168,0.8)',
+        'rgba(112,102,168,0.9)',
+        'rgba(163,148,224,0.95)'
+      ],
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { ...tickPad, maxRotation: 0, font: { size: 10 } } },
+      y: { grid, ticks: tickPad, beginAtZero: true }
+    }
+  }
+});
+
+// ─── 4. HOURLY LINE ─────────────────────────────────────────────────
+new Chart(document.getElementById('hourChart'), {
+  type: 'line',
+  data: {
+    labels: HOURS.map(h => `${h}h`),
+    datasets: [{
+      label: 'Leads',
+      data: HOUR_DATA,
+      borderColor: '#4DC8FF',
+      backgroundColor: 'rgba(77,200,255,0.12)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          ...tickPad,
+          maxTicksLimit: 8,
+          callback: (_, i) => i % 4 === 0 ? `${HOURS[i]}h` : ''
+        }
+      },
+      y: { grid, ticks: tickPad, beginAtZero: true }
+    }
+  }
+});
+
+// ─── 5. DAY OF WEEK BAR ─────────────────────────────────────────────
+const DOW_COLORS = DOW_DATA.map((v, i) => {
+  const max = Math.max(...DOW_DATA);
+  const alpha = 0.45 + (v / max) * 0.5;
+  return i === DOW_DATA.indexOf(max)
+    ? 'rgba(255,159,69,0.9)'
+    : `rgba(112,102,168,${alpha})`;
+});
+
+new Chart(document.getElementById('dowChart'), {
+  type: 'bar',
+  data: {
+    labels: DOW_LABELS,
+    datasets: [{
+      label: 'Leads',
+      data: DOW_DATA,
+      backgroundColor: DOW_COLORS,
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: tickPad },
+      y: { grid, ticks: tickPad, beginAtZero: true }
+    }
+  }
+});
+
+// ─── 6. REPLY RATE LINE ─────────────────────────────────────────────
+new Chart(document.getElementById('replyRateChart'), {
+  type: 'line',
+  data: {
+    labels: MONTHS,
+    datasets: [{
+      label: 'Taxa de Resposta (%)',
+      data: REPLY_RATE,
+      borderColor: '#A394E0',
+      backgroundColor: 'rgba(163,148,224,0.15)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 5,
+      pointBackgroundColor: '#A394E0',
+      pointBorderColor: '#0C0C1A',
+      pointBorderWidth: 2,
+      borderWidth: 2.5,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${ctx.parsed.y}%  (${WITH_REPLY[ctx.dataIndex]}/${TOTAL_CONV[ctx.dataIndex]} leads)`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: tickPad },
+      y: {
+        grid,
+        ticks: { ...tickPad, callback: v => `${v}%` },
+        min: 0, max: 100,
+        suggestedMax: 100
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
